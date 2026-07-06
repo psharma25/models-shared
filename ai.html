@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BitSense AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E1726; --ink-2:#16223A; --ink-line:#24324C;
+  --paper:#FFFFFF; --surface:#F4F6FA; --line:#E3E8EF;
+  --text:#172234; --muted:#647087; --muted-d:#93A1B8;
+  --teal:#0E7C86; --teal-d:#0B656D; --teal-soft:#E4F2F3;
+  --indigo:#3A56C5; --indigo-d:#2E45A6; --indigo-soft:#EAEEFC;
+  --violet:#7A45C9; --violet-soft:#F1EAFB;
+  --amber:#C9892B; --amber-soft:#F7EEDD;
+  --green:#1E8A63; --green-soft:#E2F4EC;
+  --red:#a1272e; --red-soft:#FBEAEC;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;
+  font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:var(--text);background:var(--surface);font-size:14px;line-height:1.5}
+button{font-family:inherit}
+
+/* ---------- Layout ---------- */
+.app{display:grid;grid-template-rows:auto 1fr auto;height:100vh;max-height:100vh}
+
+/* ---------- Topbar ---------- */
+.topbar{background:var(--ink);color:#fff;padding:10px 18px;
+  display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--ink-line)}
+.brand{font:600 15px/1 'Space Grotesk',Inter,sans-serif;letter-spacing:.02em;
+  display:flex;align-items:center;gap:8px}
+.brand .dot{width:8px;height:8px;background:var(--teal);border-radius:50%}
+.topbar .spacer{flex:1}
+.topbar .status{font:500 11px/1 Inter,sans-serif;color:var(--muted-d);
+  display:flex;align-items:center;gap:6px}
+.topbar .status .pip{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.topbar .status.ok .pip{background:var(--green)}
+.topbar .status.err .pip{background:var(--red)}
+.topbar select{background:var(--ink-2);color:#fff;border:1px solid var(--ink-line);
+  padding:7px 10px;border-radius:8px;font:500 12px/1 Inter,sans-serif;
+  min-width:220px;cursor:pointer}
+.topbar button.iconbtn{background:var(--ink-2);color:#fff;border:1px solid var(--ink-line);
+  padding:7px 12px;border-radius:8px;font:500 12px/1 Inter,sans-serif;cursor:pointer}
+.topbar button.iconbtn:hover{background:#1B2A44}
+
+/* ---------- Main chat area ---------- */
+.main{overflow-y:auto;padding:20px;background:var(--surface);
+  display:flex;flex-direction:column;align-items:center}
+.main-inner{width:100%;max-width:900px;display:flex;flex-direction:column;gap:14px}
+
+.empty-state{text-align:center;color:var(--muted);padding:60px 20px;
+  display:flex;flex-direction:column;align-items:center;gap:14px}
+.empty-state h2{margin:0;color:var(--text);font:600 20px/1.3 'Space Grotesk',sans-serif}
+.empty-state p{margin:0;max-width:480px}
+.empty-state .examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+  margin-top:8px;max-width:640px}
+.empty-state .ex-chip{background:var(--paper);border:1px solid var(--line);
+  padding:8px 12px;border-radius:20px;cursor:pointer;font:400 12px/1.3 Inter,sans-serif;
+  color:var(--text);text-align:left;max-width:280px}
+.empty-state .ex-chip:hover{background:var(--teal-soft);border-color:var(--teal)}
+
+/* ---------- Messages ---------- */
+.msg{display:flex;gap:12px;padding:14px 16px;border-radius:12px;
+  border:1px solid var(--line);background:var(--paper)}
+.msg.user{background:var(--indigo-soft);border-color:#D5DEF6}
+.msg.assistant{background:var(--paper)}
+.msg.error{background:var(--red-soft);border-color:#F0C5CB;color:var(--red)}
+.msg .avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font:700 11px/1 'Space Grotesk',sans-serif;color:#fff}
+.msg.user .avatar{background:var(--indigo)}
+.msg.assistant .avatar{background:var(--teal)}
+.msg.error .avatar{background:var(--red)}
+.msg .content{flex:1;min-width:0}
+.msg .meta{font:500 10px/1 Inter,sans-serif;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.msg .body{white-space:pre-wrap;word-wrap:break-word;
+  font:400 14px/1.6 Inter,sans-serif;color:var(--text)}
+.msg .body code{background:var(--surface);padding:1px 5px;border-radius:4px;
+  font:500 12.5px/1.4 'JetBrains Mono',monospace}
+.msg .body pre{background:var(--ink);color:#E3E8EF;padding:12px;border-radius:8px;
+  overflow-x:auto;font:400 12.5px/1.5 'JetBrains Mono',monospace;margin:8px 0}
+.msg .actions{display:flex;gap:6px;margin-top:8px}
+.msg .actions button{background:none;border:1px solid var(--line);
+  padding:4px 10px;border-radius:6px;font:500 11px/1 Inter,sans-serif;
+  color:var(--muted);cursor:pointer}
+.msg .actions button:hover{background:var(--surface);color:var(--text)}
+
+.thinking{color:var(--muted);font-style:italic;
+  display:inline-flex;align-items:center;gap:4px}
+.thinking::after{content:'';width:6px;height:6px;background:var(--teal);
+  border-radius:50%;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* ---------- Bottom composer ---------- */
+.composer{background:var(--paper);border-top:1px solid var(--line);padding:14px 18px}
+.composer-inner{width:100%;max-width:900px;margin:0 auto;
+  display:flex;flex-direction:column;gap:8px}
+.context-bar{display:flex;align-items:center;gap:8px;font:500 11px/1.3 Inter,sans-serif;
+  color:var(--muted)}
+.context-bar .ctx-toggle{background:none;border:1px solid var(--line);
+  padding:5px 10px;border-radius:14px;font:500 11px/1 Inter,sans-serif;
+  color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px}
+.context-bar .ctx-toggle:hover{background:var(--surface)}
+.context-bar .ctx-toggle.on{background:var(--teal-soft);color:var(--teal-d);
+  border-color:var(--teal)}
+.context-panel{display:none;background:var(--surface);border:1px solid var(--line);
+  border-radius:8px;padding:10px}
+.context-panel.on{display:block}
+.context-panel textarea{width:100%;min-height:70px;max-height:200px;
+  border:1px solid var(--line);border-radius:6px;padding:8px 10px;
+  font:400 12px/1.5 'JetBrains Mono',monospace;color:var(--text);resize:vertical;
+  background:var(--paper)}
+.context-panel .ctx-hint{font:400 11px/1.4 Inter,sans-serif;color:var(--muted);
+  margin-top:6px}
+
+.prompt-wrap{position:relative;display:flex;gap:8px;align-items:flex-end}
+.prompt-wrap textarea{flex:1;border:1px solid var(--line);border-radius:10px;
+  padding:12px 14px;font:400 14px/1.5 Inter,sans-serif;color:var(--text);
+  min-height:52px;max-height:200px;resize:none;background:var(--paper)}
+.prompt-wrap textarea:focus{outline:none;border-color:var(--teal);
+  box-shadow:0 0 0 3px var(--teal-soft)}
+.send-btn{background:var(--teal);color:#fff;border:none;border-radius:10px;
+  padding:0 20px;height:52px;font:600 13px/1 Inter,sans-serif;cursor:pointer;
+  display:flex;align-items:center;gap:6px;flex-shrink:0}
+.send-btn:hover{background:var(--teal-d)}
+.send-btn[disabled]{opacity:.5;cursor:not-allowed}
+.composer-hint{font:400 10.5px/1 Inter,sans-serif;color:var(--muted-d);
+  text-align:center;margin-top:2px}
+
+/* ---------- Settings modal ---------- */
+.scrim{position:fixed;inset:0;background:rgba(14,23,38,.55);z-index:100;display:none}
+.scrim.on{display:block}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:101;
+  background:var(--paper);border:1px solid var(--line);border-radius:12px;
+  width:min(520px,92vw);max-height:88vh;display:none;flex-direction:column;
+  box-shadow:0 20px 60px rgba(14,23,38,.35)}
+.modal.on{display:flex}
+.modal header{padding:14px 18px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between}
+.modal header h3{margin:0;font:600 15px/1.2 'Space Grotesk',sans-serif}
+.modal .body{padding:14px 18px;overflow:auto;flex:1;
+  display:flex;flex-direction:column;gap:14px}
+.modal footer{padding:12px 18px;border-top:1px solid var(--line);
+  display:flex;gap:8px;justify-content:flex-end}
+.modal .close{background:none;border:none;font-size:22px;color:var(--muted);
+  cursor:pointer;line-height:1}
+.modal .primary{background:var(--indigo);color:#fff;border:none;border-radius:8px;
+  padding:8px 16px;font:600 13px/1 Inter,sans-serif;cursor:pointer}
+.modal .primary:hover{background:var(--indigo-d)}
+.modal .secondary{background:var(--surface);color:var(--text);border:1px solid var(--line);
+  border-radius:8px;padding:8px 16px;font:500 13px/1 Inter,sans-serif;cursor:pointer}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font:600 10px/1.2 Inter,sans-serif;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em}
+.field input, .field select{width:100%;padding:9px 11px;border:1px solid var(--line);
+  border-radius:8px;font:400 13px/1.4 Inter,sans-serif;color:var(--text);
+  background:var(--paper);box-sizing:border-box}
+.field .hint{font:400 11px/1.4 Inter,sans-serif;color:var(--muted)}
+
+.tag{display:inline-block;font:600 9px/1 Inter,sans-serif;padding:3px 6px;
+  border-radius:4px;text-transform:uppercase;letter-spacing:.05em}
+.tag.free{background:var(--green-soft);color:var(--green)}
+.tag.paid{background:var(--amber-soft);color:var(--amber)}
+
+/* ---------- Mobile ---------- */
+@media (max-width:640px){
+  .topbar{padding:10px 12px;gap:8px;flex-wrap:wrap}
+  .topbar select{min-width:0;flex:1;max-width:200px}
+  .brand{font-size:13px}
+  .main{padding:14px}
+  .composer{padding:12px}
+  .msg{padding:12px 14px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ TOPBAR ============ -->
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span>BitSense AI</div>
+    <div class="spacer"></div>
+    <div class="status" id="status"><span class="pip"></span><span id="status-text">Not configured</span></div>
+    <select id="model-select" title="Choose model">
+      <option value="">— pick a model —</option>
+    </select>
+    <button class="iconbtn" onclick="openSettings()" title="Settings">⚙</button>
+    <button class="iconbtn" onclick="clearConversation()" title="New chat">↻ New</button>
+  </header>
+
+  <!-- ============ MESSAGES ============ -->
+  <main class="main" id="main">
+    <div class="main-inner" id="main-inner">
+      <div class="empty-state" id="empty-state">
+        <h2>Ready when you are.</h2>
+        <p>Ask about a policy, draft a procedure, compare frameworks, or paste a document into the context box for the model to reason about.</p>
+        <div class="examples">
+          <div class="ex-chip" onclick="quickPrompt(this.textContent)">Draft a HIPAA-aligned incident response procedure</div>
+          <div class="ex-chip" onclick="quickPrompt(this.textContent)">Map ISO 27001 A.5.24 to NIST 800-53 controls</div>
+          <div class="ex-chip" onclick="quickPrompt(this.textContent)">Summarize the FDA 524B premarket cybersecurity requirements</div>
+          <div class="ex-chip" onclick="quickPrompt(this.textContent)">What SBOM formats satisfy EU CRA obligations?</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ COMPOSER ============ -->
+  <div class="composer">
+    <div class="composer-inner">
+
+      <div class="context-bar">
+        <button class="ctx-toggle" id="ctx-toggle" onclick="toggleContext()">
+          <span id="ctx-icon">＋</span> <span id="ctx-label">Add context (paste a document)</span>
+        </button>
+        <span id="ctx-count" style="color:var(--muted)"></span>
+      </div>
+
+      <div class="context-panel" id="context-panel">
+        <textarea id="context-text" placeholder="Paste a policy, procedure, regulation excerpt, or any document you want the model to reason about. It stays in your browser."></textarea>
+        <div class="ctx-hint">The context stays attached to every question until you clear it. Long context works best with Gemini 2.5 Flash (1M-token window).</div>
+      </div>
+
+      <div class="prompt-wrap">
+        <textarea id="prompt" placeholder="Ask anything…" rows="1" oninput="autosize(this)"></textarea>
+        <button class="send-btn" id="send" onclick="send()">Send</button>
+      </div>
+
+      <div class="composer-hint">⌘/Ctrl + Enter to send · Conversation stored in this browser only</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div class="scrim" id="scrim" onclick="closeSettings()"></div>
+<div class="modal" id="settings-modal">
+  <header>
+    <h3>Settings</h3>
+    <button class="close" onclick="closeSettings()">×</button>
+  </header>
+  <div class="body">
+    <div class="field">
+      <label for="worker-url">Cloudflare Worker URL</label>
+      <input id="worker-url" type="url" placeholder="https://llm-proxy.YOUR-ACCOUNT.workers.dev" />
+      <div class="hint">Root URL of your LLM proxy (no trailing slash).</div>
+    </div>
+    <div class="field">
+      <label>Available models</label>
+      <div id="model-status" class="hint">—</div>
+    </div>
+    <div class="field">
+      <label>Temperature (creativity)</label>
+      <input id="temperature" type="number" min="0" max="2" step="0.1" value="0.4" />
+      <div class="hint">0 = deterministic, 1 = balanced, 2 = creative. Default 0.4 for GRC work.</div>
+    </div>
+    <div class="field">
+      <label>Max response tokens</label>
+      <input id="max-tokens" type="number" min="256" max="4096" step="128" value="1500" />
+      <div class="hint">Hard cap: 4096. Larger = longer answers but more cost.</div>
+    </div>
+  </div>
+  <footer>
+    <button class="secondary" onclick="closeSettings()">Cancel</button>
+    <button class="primary" onclick="saveSettings()">Save</button>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+// ============ STATE ============
+const LS = {
+  URL: 'bitsense.ai.workerUrl',
+  MODEL: 'bitsense.ai.modelId',
+  TEMP: 'bitsense.ai.temperature',
+  MAX: 'bitsense.ai.maxTokens',
+  CONV: 'bitsense.ai.conversation',
+  CTX: 'bitsense.ai.context'
+};
+const state = {
+  workerUrl: localStorage.getItem(LS.URL) || '',
+  modelId: localStorage.getItem(LS.MODEL) || '',
+  temperature: parseFloat(localStorage.getItem(LS.TEMP) || '0.4'),
+  maxTokens: parseInt(localStorage.getItem(LS.MAX) || '1500', 10),
+  models: [],
+  conversation: JSON.parse(localStorage.getItem(LS.CONV) || '[]'),
+  context: localStorage.getItem(LS.CTX) || '',
+  sending: false
+};
+
+// ============ INIT ============
+window.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('context-text').value = state.context;
+  updateContextUI();
+  if (state.workerUrl) {
+    await loadModels();
+    populateModelSelect();
+    updateStatus();
+  } else {
+    updateStatus();
+    setTimeout(openSettings, 300);
+  }
+  renderConversation();
+  document.getElementById('prompt').addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); send(); }
+  });
+  document.getElementById('context-text').addEventListener('input', (e) => {
+    state.context = e.target.value;
+    localStorage.setItem(LS.CTX, state.context);
+    updateContextUI();
+  });
+  document.getElementById('model-select').addEventListener('change', (e) => {
+    state.modelId = e.target.value;
+    localStorage.setItem(LS.MODEL, state.modelId);
+    updateStatus();
+  });
+});
+
+// ============ MODELS ============
+async function loadModels() {
+  if (!state.workerUrl) return;
+  try {
+    const r = await fetch(state.workerUrl + '/models');
+    const j = await r.json();
+    state.models = Array.isArray(j.models) ? j.models : [];
+  } catch (e) {
+    state.models = [];
+    console.error('Failed to load models:', e);
+  }
+}
+
+function populateModelSelect() {
+  const sel = document.getElementById('model-select');
+  if (!state.models.length) {
+    sel.innerHTML = '<option value="">— no models available —</option>';
+    return;
+  }
+  sel.innerHTML = state.models.map(m =>
+    `<option value="${m.id}">${escape(m.displayName)}${m.tier === 'free' ? ' (free)' : ''}</option>`
+  ).join('');
+  if (state.modelId && state.models.find(m => m.id === state.modelId)) {
+    sel.value = state.modelId;
+  } else if (state.models.length) {
+    // Prefer a free model as default if nothing selected
+    const freeDefault = state.models.find(m => m.tier === 'free') || state.models[0];
+    state.modelId = freeDefault.id;
+    sel.value = state.modelId;
+    localStorage.setItem(LS.MODEL, state.modelId);
+  }
+}
+
+function updateStatus() {
+  const s = document.getElementById('status');
+  const t = document.getElementById('status-text');
+  if (!state.workerUrl) {
+    s.className = 'status err'; t.textContent = 'Worker URL not set';
+  } else if (!state.models.length) {
+    s.className = 'status err'; t.textContent = 'Worker unreachable';
+  } else if (!state.modelId) {
+    s.className = 'status'; t.textContent = 'Pick a model';
+  } else {
+    s.className = 'status ok';
+    const m = state.models.find(x => x.id === state.modelId);
+    t.textContent = m ? m.displayName.split(' (')[0] : state.modelId;
+  }
+}
+
+// ============ SETTINGS MODAL ============
+function openSettings() {
+  document.getElementById('worker-url').value = state.workerUrl;
+  document.getElementById('temperature').value = state.temperature;
+  document.getElementById('max-tokens').value = state.maxTokens;
+  const ms = document.getElementById('model-status');
+  if (state.models.length) {
+    ms.innerHTML = `<span style="color:var(--green)">✓</span> ${state.models.length} model${state.models.length===1?'':'s'} available.`;
+  } else if (state.workerUrl) {
+    ms.innerHTML = `<span style="color:var(--red)">✗</span> Worker returned no models. Check the URL and that provider keys are set in Cloudflare.`;
+  } else {
+    ms.textContent = 'Enter Worker URL, then save to load models.';
+  }
+  document.getElementById('scrim').classList.add('on');
+  document.getElementById('settings-modal').classList.add('on');
+}
+function closeSettings() {
+  document.getElementById('scrim').classList.remove('on');
+  document.getElementById('settings-modal').classList.remove('on');
+}
+async function saveSettings() {
+  state.workerUrl = document.getElementById('worker-url').value.trim().replace(/\/+$/, '');
+  state.temperature = clamp(parseFloat(document.getElementById('temperature').value) || 0.4, 0, 2);
+  state.maxTokens = clamp(parseInt(document.getElementById('max-tokens').value, 10) || 1500, 256, 4096);
+  localStorage.setItem(LS.URL, state.workerUrl);
+  localStorage.setItem(LS.TEMP, String(state.temperature));
+  localStorage.setItem(LS.MAX, String(state.maxTokens));
+  if (state.workerUrl) {
+    await loadModels();
+    populateModelSelect();
+  }
+  updateStatus();
+  closeSettings();
+}
+
+// ============ CONTEXT PANEL ============
+function toggleContext() {
+  const p = document.getElementById('context-panel');
+  const on = !p.classList.contains('on');
+  p.classList.toggle('on', on);
+  document.getElementById('ctx-icon').textContent = on ? '−' : '＋';
+  document.getElementById('ctx-toggle').classList.toggle('on', on);
+}
+function updateContextUI() {
+  const n = (state.context || '').length;
+  const c = document.getElementById('ctx-count');
+  const label = document.getElementById('ctx-label');
+  if (n > 0) {
+    c.textContent = `· ${n.toLocaleString()} chars attached`;
+    label.textContent = 'Context attached';
+    document.getElementById('ctx-toggle').classList.add('on');
+  } else {
+    c.textContent = '';
+    label.textContent = 'Add context (paste a document)';
+    document.getElementById('ctx-toggle').classList.remove('on');
+  }
+}
+
+// ============ CONVERSATION ============
+function renderConversation() {
+  const inner = document.getElementById('main-inner');
+  const empty = document.getElementById('empty-state');
+  if (!state.conversation.length) {
+    if (empty) empty.style.display = '';
+    // remove any rendered messages
+    Array.from(inner.querySelectorAll('.msg')).forEach(n => n.remove());
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  // Wipe and rebuild — simpler than diffing
+  Array.from(inner.querySelectorAll('.msg')).forEach(n => n.remove());
+  for (const m of state.conversation) {
+    inner.appendChild(renderMsg(m));
+  }
+  scrollToBottom();
+}
+function renderMsg(m) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + (m.role === 'user' ? 'user' : m.role === 'error' ? 'error' : 'assistant');
+  const avatar = m.role === 'user' ? 'YOU' : m.role === 'error' ? '!' : 'AI';
+  const modelTag = m.model ? `<span class="tag ${m.tier || 'free'}">${escape(m.model)}</span>` : '';
+  const actions = m.role === 'assistant'
+    ? `<div class="actions"><button onclick="copyMsg(this)">Copy</button></div>`
+    : '';
+  el.innerHTML = `
+    <div class="avatar">${avatar}</div>
+    <div class="content">
+      <div class="meta">${m.role === 'user' ? 'You' : m.role === 'error' ? 'Error' : 'Assistant'} ${modelTag} <span style="color:var(--muted-d)">${m.ts ? new Date(m.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span></div>
+      <div class="body">${formatMsg(m.content)}</div>
+      ${actions}
+    </div>
+  `;
+  return el;
+}
+function formatMsg(text) {
+  // Minimal: escape HTML, then render simple code fences and inline code
+  let s = escape(text);
+  // Fenced code blocks ```...```
+  s = s.replace(/```([\s\S]*?)```/g, (_, code) => `<pre>${code.trim()}</pre>`);
+  // Inline `code`
+  s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  return s;
+}
+function copyMsg(btn) {
+  const body = btn.closest('.msg').querySelector('.body');
+  navigator.clipboard.writeText(body.innerText).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+function scrollToBottom() {
+  const m = document.getElementById('main');
+  m.scrollTop = m.scrollHeight;
+}
+function clearConversation() {
+  if (state.conversation.length && !confirm('Start a new chat? Current conversation will be cleared.')) return;
+  state.conversation = [];
+  localStorage.setItem(LS.CONV, '[]');
+  renderConversation();
+  document.getElementById('prompt').focus();
+}
+
+// ============ SEND ============
+function quickPrompt(text) {
+  const p = document.getElementById('prompt');
+  p.value = text;
+  autosize(p);
+  p.focus();
+}
+function autosize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+}
+async function send() {
+  if (state.sending) return;
+  const promptEl = document.getElementById('prompt');
+  const text = promptEl.value.trim();
+  if (!text) return;
+  if (!state.workerUrl) { openSettings(); return; }
+  if (!state.modelId) { openSettings(); return; }
+
+  // Push user message
+  state.conversation.push({
+    role: 'user',
+    content: text,
+    ts: Date.now()
+  });
+  persistConversation();
+  renderConversation();
+  promptEl.value = ''; autosize(promptEl);
+
+  // Push a placeholder assistant message we'll fill in
+  const placeholder = { role: 'assistant', content: '__thinking__', ts: Date.now() };
+  state.conversation.push(placeholder);
+  renderConversation();
+  // Show thinking indicator on the last assistant message
+  const lastAssistant = document.querySelectorAll('.msg.assistant');
+  if (lastAssistant.length) {
+    lastAssistant[lastAssistant.length - 1].querySelector('.body').innerHTML = '<span class="thinking">Thinking</span>';
+  }
+
+  state.sending = true;
+  document.getElementById('send').disabled = true;
+
+  // Build messages array: system + all real turns (skip placeholder)
+  const system = buildSystemPrompt();
+  const messages = state.conversation
+    .filter(m => m.role === 'user' || (m.role === 'assistant' && m.content !== '__thinking__'))
+    .map(m => ({ role: m.role, content: m.content }));
+
+  try {
+    const r = await fetch(state.workerUrl + '/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: state.modelId,
+        system,
+        messages,
+        max_tokens: state.maxTokens,
+        temperature: state.temperature
+      })
+    });
+    const j = await r.json();
+    // Replace placeholder
+    state.conversation.pop();
+    if (!r.ok) {
+      state.conversation.push({
+        role: 'error',
+        content: `Error ${r.status}: ${j.error || 'unknown'}${j.detail ? '\n\n' + j.detail : ''}`,
+        ts: Date.now()
+      });
+    } else {
+      const m = state.models.find(x => x.id === state.modelId);
+      state.conversation.push({
+        role: 'assistant',
+        content: j.text || '(empty response)',
+        model: m ? m.displayName.split(' (')[0] : state.modelId,
+        tier: m ? m.tier : 'free',
+        ts: Date.now()
+      });
+    }
+  } catch (e) {
+    state.conversation.pop();
+    state.conversation.push({
+      role: 'error',
+      content: `Network error: ${String(e)}`,
+      ts: Date.now()
+    });
+  }
+  persistConversation();
+  renderConversation();
+  state.sending = false;
+  document.getElementById('send').disabled = false;
+  promptEl.focus();
+}
+
+function buildSystemPrompt() {
+  const parts = [
+    'You are a senior GRC / product-security assistant helping a cybersecurity',
+    'executive (vCISO). Be concrete, cite exact clauses when referencing provided',
+    'context, and flag ambiguity. Prefer short declarative sentences, evidence,',
+    'implication, then action. Keep answers under 500 words unless the user asks',
+    'for more.'
+  ];
+  if (state.context && state.context.trim()) {
+    parts.push('\n\n--- ATTACHED CONTEXT (user-provided document) ---\n');
+    parts.push(state.context.slice(0, 180_000));
+    parts.push('\n--- END CONTEXT ---\n');
+    parts.push('When answering, treat the attached context as the primary source. Cite specific sections.');
+  }
+  return parts.join(' ');
+}
+
+function persistConversation() {
+  // Cap at ~200 messages / ~500KB to avoid localStorage blowout
+  const cap = 200;
+  if (state.conversation.length > cap) {
+    state.conversation = state.conversation.slice(-cap);
+  }
+  try {
+    localStorage.setItem(LS.CONV, JSON.stringify(state.conversation));
+  } catch (e) {
+    // Storage full — drop oldest half and retry once
+    state.conversation = state.conversation.slice(-Math.floor(cap/2));
+    try { localStorage.setItem(LS.CONV, JSON.stringify(state.conversation)); } catch {}
+  }
+}
+
+// ============ UTIL ============
+function escape(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+function clamp(n, lo, hi) {
+  if (Number.isNaN(n)) return lo;
+  return Math.max(lo, Math.min(hi, n));
+}
+</script>
+</body>
+</html>
